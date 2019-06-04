@@ -7,7 +7,7 @@ document.getElementById("service").innerHTML = "Hours of Service for " + today1[
 
 const request = new XMLHttpRequest();
 
-request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804', true);
+request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=2019&gm=6&gd=11', true);
 
 request.onload = function() {
 
@@ -16,29 +16,57 @@ request.onload = function() {
     var day = today.getDay();
     var data = JSON.parse(this.response);
 
-    if (data.items[3] != undefined) { // to account for when there is no yomtov category
-        var holiday = data.items[3].yomtov; 
+    var lightingIndex = -1;
+    var holidayIndex = -1;
+
+    for (var i = 0; i < data.items.length; i++) {
+        if (data.items[i].category == "candles") {
+            lightingIndex = i;
+            i = data.items.length;
+        }
     }
-    else {
-        var holiday = false;
+
+    for (var i = 0; i < data.items.length; i++) {
+        if (data.items[i].yomtov == true) {
+            holidayIndex = i;
+            i = data.items.length;
+        }
+    }
+
+    if (holidayIndex != -1) { // to account for when there is no yomtov category
+        var holiday = true;
     }
 
     if (day != 5 && !holiday) { 
 
-        var time = data.items[2].date; // [1] when not today, [2] when today
+        var time = data.items[lightingIndex].date; 
         var splitting = time.split('T');
         var lighting = (splitting[1].split('-'))[0].split(':'); 
         var hour = lighting[0];
         var minutes = lighting[1];
-        var openHour = parseInt(hour, 10);
-        var openMinutes = parseInt(minutes, 10) + 45;
-        if (openMinutes >= 60) {
-            openMinutes = openMinutes - 60;
-            openHour++;
-        }
+        if (day != 6) { // not a saturday so opens 45 min after candlelighting
+            var openHour = parseInt(hour, 10);
+            var openMinutes = parseInt(minutes, 10) + 45;
+            if (openMinutes >= 60) {
+                openMinutes = openMinutes - 60;
+                openHour++;
+            }
 
-        if (openHour > 12) {
-            openHour = openHour - 12;
+            if (openHour > 12) {
+                openHour = openHour - 12;
+            }
+        }
+        else { // saturday so opens 1 1/2 after candelighting
+            var openHour = parseInt(hour, 10) + 1;
+            var openMinutes = parseInt(minutes, 10) + 30;
+            if (openMinutes >= 60) {
+                openMinutes = openMinutes - 60;
+                openHour++;
+            }
+
+            if (openHour > 12) {
+                openHour = openHour - 12;
+            }
         }
 
         var text = openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";

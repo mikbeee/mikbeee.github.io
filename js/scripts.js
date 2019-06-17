@@ -1,50 +1,88 @@
 // display hours of service for specific date
 
 var today = new Date();
-var today1 = today.toString().split(" ", 4);
+var today1 = today.toString().split(" ", 4); 
+document.getElementById("service").innerHTML = "Hours of Service for " + today1[1] + " " + today1[2] + ", " + today1[3]; 
 
-document.getElementById("service").innerHTML = "Hours of Service for " + today1[1] + " " + today1[2] + ", " + today1[3];
+// get tomorrow's date
+// to check if erev chag or last day of chag
+var tomorrow = new Date();
+tomorrow.setDate(today.getDate() + 1);
 
 const request = new XMLHttpRequest();
 
-request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=2019&gm=6&gd=11', true);
+var tom = tomorrow.toString().split(" ", 4);
+
+var tomDay = tom[2];
+var tomYear = tomorrow.getFullYear();
+var tomMonth = tomorrow.getMonth() + 1;
+
+var holidayTom = false; // assume false
+
+// find out information about tomorrow
+request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${tomYear}&gm=${tomMonth}&gd=${tomDay}', true);
+
+request.onload = function() {
+    var data = JSON.parse(this.response);
+
+    // find if tom is a holiday
+    for (var i = 0; i < data.items.length; i++) {
+        if (data.items[i].yomtov == true) {
+            holidayTom = true;
+            i = data.items.length;
+        }
+    }
+}
+
+request.send();
+
+// find out information about today
+request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804', true); 
 
 request.onload = function() {
 
     // for opening hours and earliest tevilla
-
     var day = today.getDay();
     var data = JSON.parse(this.response);
 
     var lightingIndex = -1;
-    var holidayIndex = -1;
 
-    for (var i = 0; i < data.items.length; i++) {
+    // find which element in the array of the response 
+    // has the lighting time for the week
+    for (var i = 0; i < data.items.length; i++) { 
         if (data.items[i].category == "candles") {
             lightingIndex = i;
             i = data.items.length;
         }
     }
 
+    var holiday;
+    var lastDayOfChag;
+
+    // find if it's a holiday
+    if (holidayTom) {
+        holiday = true;
+    }
+    else {
+        holiday = false;
+    }
+
     for (var i = 0; i < data.items.length; i++) {
         if (data.items[i].yomtov == true) {
-            holidayIndex = i;
-            i = data.items.length;
+            if (holidayTom == false) {
+                lastDayOfChag = true;
+            }
         }
     }
 
-    if (holidayIndex != -1) { // to account for when there is no yomtov category
-        var holiday = true;
-    }
-
-    if (day != 5 && !holiday) { 
+    if (day != 5 && !holiday) { // not friday or a holiday
 
         var time = data.items[lightingIndex].date; 
         var splitting = time.split('T');
         var lighting = (splitting[1].split('-'))[0].split(':'); 
         var hour = lighting[0];
         var minutes = lighting[1];
-        if (day != 6) { // not a saturday so opens 45 min after candlelighting
+        if (day != 6 && !lastDayOfChag) { // not a saturday or last day of chag so opens 45 min after candlelighting
             var openHour = parseInt(hour, 10);
             var openMinutes = parseInt(minutes, 10) + 45;
             if (openMinutes >= 60) {
@@ -56,7 +94,7 @@ request.onload = function() {
                 openHour = openHour - 12;
             }
         }
-        else { // saturday so opens 1 1/2 after candelighting
+        else { // saturday or last day of chag so opens 1 1/2 after candelighting
             var openHour = parseInt(hour, 10) + 1;
             var openMinutes = parseInt(minutes, 10) + 30;
             if (openMinutes >= 60) {

@@ -9,20 +9,21 @@ document.getElementById("service").innerHTML = "Hours of Service for " + today1[
 var tomorrow = new Date();
 tomorrow.setDate(today.getDate() + 1);
 
-const request = new XMLHttpRequest();
+const request1 = new XMLHttpRequest();
+const request2 = new XMLHttpRequest();
 
 var tom = tomorrow.toString().split(" ", 4);
 
-var tomDay = tom[2];
+var tomDay = parseInt(tom[2]);
 var tomYear = tomorrow.getFullYear();
 var tomMonth = tomorrow.getMonth() + 1;
 
 var holidayTom = false; // assume false
 
 // find out information about tomorrow
-request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${tomYear}&gm=${tomMonth}&gd=${tomDay}', true);
+request1.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${tomYear}&gm=${tomMonth}&gd=${tomDay}`, true);
 
-request.onload = function() {
+request1.onload = function() {
     var data = JSON.parse(this.response);
 
     // find if tom is a holiday
@@ -34,12 +35,18 @@ request.onload = function() {
     }
 }
 
-request.send();
+request1.send();
 
 // find out information about today
-request.open('GET', 'https://www.hebcal.com/shabbat/?cfg=json&zip=10804', true); 
 
-request.onload = function() {
+var dayToday = parseInt(today1[2]);
+if (today.getDay() == 6) { // check fridays candlelighting because API has different response on sat
+    dayToday--;
+}
+
+request2.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${today.getYear()}&gm=${today.getMonth()+1}&gd=${dayToday}`, true); 
+
+request2.onload = function() {
 
     // for opening hours and earliest tevilla
     var day = today.getDay();
@@ -146,4 +153,4 @@ request.onload = function() {
     
 }
 
-request.send();
+request2.send();

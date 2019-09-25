@@ -2,7 +2,9 @@
 
 var today = new Date();
 var today1 = today.toString().split(" ", 4); 
-document.getElementById("service").innerHTML = "Hours of Service for " + today1[1] + " " + today1[2] + ", " + today1[3]; 
+const month = ["January", "February", "March", "April", "May",
+ "June", "July", "August", "September", "October", "November", "December"];
+document.getElementById("service").innerHTML = "Hours of Service for " + month[today.getMonth()] + " " + today1[2] + ", " + today1[3]; 
 
 // get tomorrow's date
 // to check if erev chag or last day of chag
@@ -90,38 +92,60 @@ request2.onload = function() {
         var hour = lighting[0];
         var minutes = lighting[1];
         if (day != 6 && !lastDayOfChag) { // not a saturday or last day of chag so opens 45 min after candlelighting
-            var openHour = parseInt(hour, 10);
-            var openMinutes = parseInt(minutes, 10) + 45;
-            if (openMinutes >= 60) {
-                openMinutes = openMinutes - 60;
-                openHour++;
+            var tevilaHour = parseInt(hour, 10);
+            var tevilaMinutes = parseInt(minutes, 10) + 45;
+            var openHour;
+            var openMinutes;
+            if (tevilaMinutes >= 60) {
+                tevilaMinutes = tevilaMinutes - 60;
+                tevilaHour++;
             }
 
-            if (openHour > 12) {
-                openHour = openHour - 12;
+            if (tevilaHour > 12) {
+                tevilaHour = tevilaHour - 12;
+            }
+
+            // calculating opening
+            if (tevilaMinutes > 0 && tevilaMinutes < 15) {
+                openMinutes = 30;
+                openHour = tevilaHour-1;
+            }
+            else if (tevilaMinutes >= 15 && tevilaMinutes < 45) {
+                openMinutes = 0;
+                openHour = tevilaHour;
+            }
+            else if (tevilaMinutes >= 30 && tevilaMinutes < 45) {
+                openMinutes = 0;
+                openHour = tevilaHour;
+            }
+            else {
+                openMinutes = 30;
+                openHour = tevilaHour;
             }
         }
         else { // saturday or last day of chag so opens 1 1/2 after candelighting
-            var openHour = parseInt(hour, 10) + 1;
-            var openMinutes = parseInt(minutes, 10) + 30;
-            if (openMinutes >= 60) {
-                openMinutes = openMinutes - 60;
-                openHour++;
+            var tevilaHour = parseInt(hour, 10) + 1;
+            var tevilaMinutes = parseInt(minutes, 10) + 30;
+            if (tevilaMinutes >= 60) {
+                tevilaMinutes = tevilaMinutes - 60;
+                tevilaHour++;
             }
 
-            if (openHour > 12) {
-                openHour = openHour - 12;
+            if (tevilaHour > 12) {
+                tevilaHour = tevilaHour - 12;
             }
         }
 
-        var text = openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";
+        var tevilaText = tevilaHour.toString() + ":" + (tevilaMinutes < 10 ? "0" : "") + tevilaMinutes.toString() + " PM";
+        //var openText = openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";
     }
 
     else {
-        var text = "-";
+        var tevilaText = "-";
+        //var openText = "-";
     }
-    document.getElementById("open").innerHTML = text;
-    document.getElementById("tevila").innerHTML = text;
+    //document.getElementById("open").innerHTML = openText;
+    document.getElementById("tevila").innerHTML = tevilaText;
 
     // for last bath, last shower, and closing time
 

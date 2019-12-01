@@ -61,6 +61,7 @@ request2.onload = function() {
     // find which element in the array of the response 
     // has the lighting time for the week
     for (var i = 0; i < data.items.length; i++) { 
+        console.log(data.items[i].category);
         if (data.items[i].category == "candles") {
             lightingIndex = i;
             i = data.items.length;

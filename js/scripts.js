@@ -1,6 +1,6 @@
 // display hours of service for specific date
 
-var today = new Date();
+var today = new Date(); 
 var today1 = today.toString().split(" ", 4); 
 const month = ["January", "February", "March", "April", "May",
  "June", "July", "August", "September", "October", "November", "December"];
@@ -46,7 +46,13 @@ if (today.getDay() == 6) { // check fridays candlelighting because API has diffe
     dayToday--;
 }
 
-request2.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${today.getYear()}&gm=${today.getMonth()+1}&gd=${dayToday}`, true); 
+var holiday;
+var lastDayOfChag;
+var tevilaText;
+var openText;
+
+// request with b = 0 so we get the sunset time 
+request2.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${today.getYear()}&gm=${today.getMonth()+1}&gd=${dayToday}&c=on&b=0`, true); 
 
 request2.onload = function() {
 
@@ -65,8 +71,6 @@ request2.onload = function() {
         }
     }
 
-    var holiday;
-    var lastDayOfChag;
 
     // find if it's a holiday
     if (holidayTom) {
@@ -84,67 +88,93 @@ request2.onload = function() {
         }
     }
 
-    if (day != 5 && !holiday) { // not friday or a holiday
+    if (day != 5 && !holiday && day != 6 && !lastDayOfChag) { // not friday, a holiday, saturday or last day of chag so tevila is 50 min after sunset
 
         var time = data.items[lightingIndex].date; 
         var splitting = time.split('T');
         var lighting = (splitting[1].split('-'))[0].split(':'); 
         var hour = lighting[0];
         var minutes = lighting[1];
-        if (day != 6 && !lastDayOfChag) { // not a saturday or last day of chag so opens 45 min after candlelighting
-            var tevilaHour = parseInt(hour, 10);
-            var tevilaMinutes = parseInt(minutes, 10) + 45;
-            var openHour;
-            var openMinutes;
-            if (tevilaMinutes >= 60) {
-                tevilaMinutes = tevilaMinutes - 60;
-                tevilaHour++;
-            }
-
-            if (tevilaHour > 12) {
-                tevilaHour = tevilaHour - 12;
-            }
-
-            // calculating opening
-            if (tevilaMinutes > 0 && tevilaMinutes < 15) {
-                openMinutes = 30;
-                openHour = tevilaHour-1;
-            }
-            else if (tevilaMinutes >= 15 && tevilaMinutes < 45) {
-                openMinutes = 0;
-                openHour = tevilaHour;
-            }
-            else if (tevilaMinutes >= 30 && tevilaMinutes < 45) {
-                openMinutes = 0;
-                openHour = tevilaHour;
-            }
-            else {
-                openMinutes = 30;
-                openHour = tevilaHour;
-            }
+        var tevilaHour = parseInt(hour, 10);
+        var tevilaMinutes = parseInt(minutes, 10) + 50;
+        var openHour;
+        var openMinutes;
+        if (tevilaMinutes >= 60) {
+            tevilaMinutes = tevilaMinutes - 60;
+            tevilaHour++;
         }
-        else { // saturday or last day of chag so opens 1 1/2 after candelighting
-            var tevilaHour = parseInt(hour, 10) + 1;
+
+        if (tevilaHour > 12) {
+            tevilaHour = tevilaHour - 12;
+        }
+
+        // calculating opening -- opens at most 30 minutes before tevilah -- round to the nearest hour or half hour
+        if (tevilaMinutes > 0 && tevilaMinutes <=30) {
+            openMinutes = 0;
+            openHour = tevilaHour;
+        }
+        else {
+            openMinutes = 30;
+            openHour = tevilaHour;
+        }
+
+        tevilaText = tevilaHour.toString() + ":" + (tevilaMinutes < 10 ? "0" : "") + tevilaMinutes.toString() + " PM";
+        openText = openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";
+    }
+}
+
+request2.send();
+
+if (day == 6 || lastDayOfChag) { // saturday or last day of chag so make new call and use candle lighting 
+    const request3 = new XMLHttpRequest();
+
+    request3.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${tomYear}&gm=${tomMonth}&gd=${tomDay}`, true);
+
+    request3.onload = function() {
+
+        var time = data.items[lightingIndex].date; 
+        var splitting = time.split('T');
+        var lighting = (splitting[1].split('-'))[0].split(':'); 
+        var hour = lighting[0];
+        var minutes = lighting[1];
+        var tevilaHour = parseInt(hour, 10) + 1;
             var tevilaMinutes = parseInt(minutes, 10) + 30;
             if (tevilaMinutes >= 60) {
                 tevilaMinutes = tevilaMinutes - 60;
                 tevilaHour++;
             }
 
+            if (tevilaMinutes >= 0 && tevilaMinutes <= 15) {
+                tevilaMinutes = 45;
+            }
+            else if (tevilaMinutes > 15 && tevilaMinutes <= 30) {
+                tevilaMinutes = 0;
+                tevilaHour++;
+            }
+            else if (tevilaMinutes > 30 && tevilaMinutes <= 45) {
+                tevilaMinutes = 15;
+            }
+            else {
+                tevilaMinutes = 30;
+            }
+
             if (tevilaHour > 12) {
                 tevilaHour = tevilaHour - 12;
             }
+
+            tevilaText = tevilaHour.toString() + ":" + (tevilaMinutes < 10 ? "0" : "") + tevilaMinutes.toString() + " PM";
+            openText = tevilaText; // openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";
         }
 
-        var tevilaText = tevilaHour.toString() + ":" + (tevilaMinutes < 10 ? "0" : "") + tevilaMinutes.toString() + " PM";
-        //var openText = openHour.toString() + ":" + (openMinutes < 10 ? "0" : "") + openMinutes.toString() + " PM";
+        request3.send();
     }
 
-    else {
-        var tevilaText = "-";
-        //var openText = "-";
+    if (day == 5 || holiday) {
+        tevilaText = "-";
+        openText = "-";
     }
-    //document.getElementById("open").innerHTML = openText;
+
+    document.getElementById("open").innerHTML = openText;
     document.getElementById("tevila").innerHTML = tevilaText;
 
     // for last bath, last shower, and closing time
@@ -174,7 +204,3 @@ request2.onload = function() {
         document.getElementById("last bath").innerHTML = "-";
         document.getElementById("last shower").innerHTML = "-";
     }
-    
-}
-
-request2.send();

@@ -2,9 +2,9 @@
 
 var today = new Date(); 
 var today1 = today.toString().split(" ", 4); 
-const month = ["January", "February", "March", "April", "May",
+const months = ["January", "February", "March", "April", "May",
  "June", "July", "August", "September", "October", "November", "December"];
-document.getElementById("service").innerHTML = "Hours of Service for " + month[today.getMonth()] + " " + today1[2] + ", " + today1[3]; 
+document.getElementById("service").innerHTML = "Hours of Service for " + months[today.getMonth()] + " " + today1[2] + ", " + today1[3]; 
 
 // get tomorrow's date
 // to check if erev chag or last day of chag

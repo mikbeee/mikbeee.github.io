@@ -43,6 +43,8 @@ request1.send();
 
 var dayToday = parseInt(today1[2]);
 
+console.log(dayToday);
+
 var holiday;
 var lastDayOfChag;
 var tevilaText;

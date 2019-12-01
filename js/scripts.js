@@ -67,6 +67,8 @@ request2.onload = function() {
         }
     }
 
+    console.log(lightingIndex);
+
 
     // find if it's a holiday
     if (holidayTom) {

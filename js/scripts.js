@@ -42,9 +42,6 @@ request1.send();
 // find out information about today
 
 var dayToday = parseInt(today1[2]);
-if (today.getDay() == 6) { // check fridays candlelighting because API has different response on sat
-    dayToday--;
-}
 
 var holiday;
 var lastDayOfChag;
@@ -57,7 +54,6 @@ request2.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${to
 request2.onload = function() {
 
     // for opening hours and earliest tevilla
-    var day = today.getDay();
     var data = JSON.parse(this.response);
 
     var lightingIndex = -1;
@@ -88,7 +84,7 @@ request2.onload = function() {
         }
     }
 
-    if (day != 5 && !holiday && day != 6 && !lastDayOfChag) { // not friday, a holiday, saturday or last day of chag so tevila is 50 min after sunset
+    if (dayToday != 5 && !holiday && dayToday != 6 && !lastDayOfChag) { // not friday, a holiday, saturday or last day of chag so tevila is 50 min after sunset
 
         var time = data.items[lightingIndex].date; 
         var splitting = time.split('T');
@@ -125,12 +121,29 @@ request2.onload = function() {
 
 request2.send();
 
-if (day == 6 || lastDayOfChag) { // saturday or last day of chag so make new call and use candle lighting 
+if (today.getDay() == 6 || lastDayOfChag) { // saturday or last day of chag so make new call and use candle lighting 
     const request3 = new XMLHttpRequest();
 
-    request3.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${tomYear}&gm=${tomMonth}&gd=${tomDay}`, true);
+    if (today.getDay() == 6) {
+        var day = 5; // because need candle lighting from that week 
+    }
+
+    request3.open('GET', `https://www.hebcal.com/shabbat/?cfg=json&zip=10804&gy=${today.getYear()}&gm=${today.getMonth()+1}&gd=${today}`, true);
 
     request3.onload = function() {
+
+        var data = JSON.parse(this.response);
+
+        var lightingIndex = -1;
+
+        // find which element in the array of the response 
+        // has the lighting time for the week
+        for (var i = 0; i < data.items.length; i++) { 
+            if (data.items[i].category == "candles") {
+                lightingIndex = i;
+                i = data.items.length;
+            }
+        }
 
         var time = data.items[lightingIndex].date; 
         var splitting = time.split('T');
@@ -169,7 +182,7 @@ if (day == 6 || lastDayOfChag) { // saturday or last day of chag so make new cal
         request3.send();
     }
 
-    if (day == 5 || holiday) {
+    if (today.getDay() == 5 || holiday) {
         tevilaText = "-";
         openText = "-";
     }
